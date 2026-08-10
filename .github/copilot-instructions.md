@@ -1,8 +1,0 @@
-- Project: Docs App — single-page documentation viewer in React + Vite
-- Stack: React 19, Vite 8, react-markdown, plain CSS
-- Entry: `src/App.jsx`
-- Run locally: `npm run dev`
-- Build: `npm run build`
-- Theme: light/dark/system toggle via topbar button
-- Navigation: `useState` only, no router
-- Markdown files live in `src/docs/` and are imported with `?raw`
