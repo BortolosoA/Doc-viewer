@@ -4,18 +4,39 @@ import "./App.css";
 import Sidebar from "./Sidebar";
 import DocView from "./DocView";
 
-import introMd from "./docs/intro.md?raw";
-import installMd from "./docs/install.md?raw";
-import configMd from "./docs/config.md?raw";
+// Importa todos os .md de ./docs automaticamente (eager = já vem pronto, sem await).
+// Adicionar ou remover um arquivo .md nessa pasta não exige tocar em mais nada aqui.
+const docModules = import.meta.glob("./docs/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+});
 
-const pages = [
-  { id: "intro", title: "Introdução", content: introMd },
-  { id: "install", title: "Instalação", content: installMd },
-  { id: "config", title: "Configuração", content: configMd },
-];
+// Extrai um título legível a partir do primeiro "# ..." do markdown.
+// Se não achar (arquivo vazio/sem H1), cai pro nome do arquivo.
+function extractTitle(markdown, fallback) {
+  const match = markdown.match(/^#\s+(.+)$/m);
+  if (!match) return fallback;
+  return match[1]
+    .replace(/<[^>]+>/g, "") // remove tags tipo <center>
+    .replace(/\*\*/g, "") // remove **negrito**
+    .trim();
+}
+
+const pages = Object.entries(docModules)
+  .map(([path, content]) => {
+    const id = path.split("/").pop().replace(/\.md$/, "");
+    const fallbackTitle = id.replace(/[-_]/g, " ");
+    return {
+      id,
+      title: extractTitle(content, fallbackTitle),
+      content,
+    };
+  })
+  .sort((a, b) => a.title.localeCompare(b.title, "pt-BR"));
 
 function App() {
-  const [activePage, setActivePage] = useState(pages[0].id);
+  const [activePage, setActivePage] = useState(pages[0]?.id ?? null);
   const [theme, setTheme] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("theme") || "system";
@@ -40,6 +61,22 @@ function App() {
   }, [theme]);
 
   const activeDoc = pages.find((p) => p.id === activePage) || pages[0];
+
+  if (!activeDoc) {
+    return (
+      <div className="app">
+        <header className="topbar">
+          <div className="brand">
+            <BookOpen className="logo-icon" aria-hidden="true" />
+            <span className="brand-title">Docs</span>
+          </div>
+        </header>
+        <main className="content">
+          <p>Nenhum documento encontrado em <code>src/docs</code>.</p>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="app">
