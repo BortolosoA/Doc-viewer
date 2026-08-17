@@ -1,48 +1,59 @@
-import { useRef, useState } from "react";
-import { Upload, Trash2 } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Upload, MoreHorizontal, X } from "lucide-react";
 import { api } from "./api";
 
-function Sidebar({ pages, activePage, onSelect, onUploaded, onDeleted }) {
-  const fileInputRef = useRef(null);
-  const [uploading, setUploading] = useState(false);
-  const [busyId, setBusyId] = useState(null);
-  const [status, setStatus] = useState(null); // { type, msg }
-
-  // Upload de documento. Aceita qualquer arquivo, mas tem suporte especial
-  // para .md (Markdown) — o backend normaliza o mime para text/markdown.
-  async function handleUpload(e) {
-    const file = e.target.files?.[0];
-    e.target.value = ""; // permite re-enviar o mesmo arquivo
-    if (!file) return;
-
-    setUploading(true);
-    setStatus(null);
-    try {
-      const doc = await api.uploadDocument(file);
-      setStatus({ type: "ok", msg: `Enviado: ${doc.original_name}` });
-      onUploaded?.(doc);
-    } catch (err) {
-      setStatus({ type: "err", msg: err.message });
-    } finally {
-      setUploading(false);
-    }
+function getTagColor(tag) {
+  let hash = 0;
+  for (let i = 0; i < tag.length; i++) {
+    hash = tag.charCodeAt(i) + ((hash << 5) - hash);
   }
+  const hue = Math.abs(hash % 360);
+  return `hsl(${hue}, 65%, 35%)`;
+}
+
+function Sidebar({
+  pages,
+  activePage,
+  onSelect,
+  onDeleted,
+  onOpenUploadModal,
+  onEditTags,
+}) {
+  const [busyId, setBusyId] = useState(null);
+  const [search, setSearch] = useState("");
+  const [selectedTag, setSelectedTag] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const menuRef = useRef(null);
+
+  const allTags = Array.from(new Set(pages.flatMap((p) => p.tags || [])));
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpenMenuId(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredPages = pages.filter((page) => {
+    const matchesTag = selectedTag ? (page.tags || []).includes(selectedTag) : true;
+    const matchesSearch =
+      !search || page.title.toLowerCase().includes(search.toLowerCase());
+    return matchesTag && matchesSearch;
+  });
 
   async function handleDelete(page, e) {
     e.stopPropagation();
-    if (page.source !== "remote") {
-      setStatus({ type: "err", msg: "Documentos estáticos não podem ser removidos daqui." });
-      return;
-    }
+    if (page.source !== "remote") return;
     if (!confirm(`Excluir "${page.title}"? Esta ação não pode ser desfeita.`)) return;
     setBusyId(page.id);
-    setStatus(null);
     try {
       await api.deleteDocument(page.name);
-      setStatus({ type: "ok", msg: `Excluído: ${page.title}` });
       onDeleted?.(page.name);
     } catch (err) {
-      setStatus({ type: "err", msg: err.message });
+      // ignore
     } finally {
       setBusyId(null);
     }
@@ -51,65 +62,126 @@ function Sidebar({ pages, activePage, onSelect, onUploaded, onDeleted }) {
   return (
     <aside className="sidebar">
       <div className="sidebar-actions">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".md,.markdown,text/markdown"
-          onChange={handleUpload}
-          style={{ display: "none" }}
-        />
         <button
           type="button"
           className="upload-btn"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
+          onClick={onOpenUploadModal}
           title="Enviar documento (.md)"
         >
           <Upload size={16} aria-hidden="true" />
-          {uploading ? "Enviando…" : "Enviar .md"}
+          Enviar .md
         </button>
       </div>
 
-      {status && (
-        <p className={`sidebar-status ${status.type}`}>
-          {status.msg}
-        </p>
-      )}
+      <div className="sidebar-search">
+        <input
+          type="text"
+          placeholder="Buscar por nome ou tag..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      <div className="tags-row">
+        <span
+          className={"chip" + (selectedTag === null ? " selected" : "")}
+          style={{ background: "var(--code-bg)", color: "var(--text-muted)" }}
+          onClick={() => setSelectedTag(null)}
+        >
+          todos
+        </span>
+        {allTags.map((tag) => (
+          <span
+            key={tag}
+            className={"chip" + (selectedTag === tag ? " selected" : "")}
+            style={{ backgroundColor: getTagColor(tag) }}
+            onClick={() => setSelectedTag(tag)}
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
 
       <nav aria-label="Páginas da documentação">
         <ul className="sidebar-list">
-          {pages.map((page) => (
-            <li key={page.id} className="sidebar-item">
-              <button
-                type="button"
-                className={`sidebar-link ${activePage === page.id ? "active" : ""}`}
-                onClick={() => onSelect(page.id)}
-                aria-current={activePage === page.id ? "page" : undefined}
-              >
-                <span className="sidebar-link-title">{page.title}</span>
-                {page.source === "remote" && (
-                  <span
-                    className="sidebar-badge"
-                    title="Documento remoto (MinIO)"
-                  >
-                    remoto
-                  </span>
-                )}
-              </button>
-              {page.source === "remote" && (
+          {filteredPages.map((page) => {
+            const isMenuOpen = openMenuId === page.id;
+
+            return (
+              <li key={page.id} className="sidebar-item">
                 <button
                   type="button"
-                  className="delete-btn"
-                  onClick={(e) => handleDelete(page, e)}
-                  disabled={busyId === page.id}
-                  aria-label={`Excluir ${page.title}`}
-                  title="Excluir documento"
+                  className={`sidebar-link ${activePage === page.id ? "active" : ""}`}
+                  onClick={() => {
+                    setOpenMenuId(null);
+                    onSelect(page.id);
+                  }}
+                  aria-current={activePage === page.id ? "page" : undefined}
                 >
-                  <Trash2 size={14} aria-hidden="true" />
+                  <span className="sidebar-link-title">{page.title}</span>
+                  <span className="tag-dots">
+                    {(page.tags || []).map((tag) => (
+                      <span
+                        key={tag}
+                        className="tag-dot"
+                        style={{ backgroundColor: getTagColor(tag) }}
+                        title={tag}
+                      />
+                    ))}
+                  </span>
+                  
+                  {page.source === "remote" && (
+                    <span
+                      className="menu-wrapper"
+                      ref={isMenuOpen ? menuRef : null}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        className="menu-trigger"
+                        aria-label={`Ações para ${page.title}`}
+                        title="Ações"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId(isMenuOpen ? null : page.id);
+                        }}
+                      >
+                        <MoreHorizontal size={16} aria-hidden="true" />
+                      </button>
+                      {isMenuOpen && (
+                        <div className="menu-dropdown" role="menu">
+                          <button
+                            type="button"
+                            className="menu-item"
+                            role="menuitem"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuId(null);
+                              onEditTags?.(page);
+                            }}
+                          >
+                            Editar tags
+                          </button>
+                          <div className="menu-divider" />
+                          <button
+                            type="button"
+                            className="menu-item menu-item--remove"
+                            role="menuitem"
+                            onClick={(e) => {
+                              setOpenMenuId(null);
+                              handleDelete(page, e);
+                            }}
+                          >
+                            Remover
+                          </button>
+                        </div>
+                      )}
+                    </span>
+                  )}
                 </button>
-              )}
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       </nav>
     </aside>

@@ -6,9 +6,7 @@ services:
       dockerfile: Dockerfile
     container_name: doc-viewer-app
     ports:
-      - "8080:80"
-    environment:
-      VITE_API_URL: http://localhost:3001
+      - "8800:80"
     depends_on:
       - api
     restart: unless-stopped
@@ -45,8 +43,8 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     ports:
-      - "9000:9000"   # S3 API
-      - "9001:9001"   # Web console
+      - "9000:9000" # S3 API
+      - "9001:9001" # Web console
     volumes:
       - minio_data:/data
     healthcheck:
@@ -69,7 +67,11 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-docs} -d ${POSTGRES_DB:-docs}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-docs} -d ${POSTGRES_DB:-docs}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
