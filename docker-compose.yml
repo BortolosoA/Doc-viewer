@@ -1,0 +1,80 @@
+services:
+  # 1) App – frontend (Nginx serving the built React app)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: doc-viewer-app
+    ports:
+      - "8080:80"
+    environment:
+      VITE_API_URL: http://localhost:3001
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  # 1b) API – backend Node/Express (upload/delete, users, tags)
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: doc-viewer-api
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-docs}
+      DATABASE_URL: postgres://${POSTGRES_USER:-docs}:${POSTGRES_PASSWORD:-docs}@db:5432/${POSTGRES_DB:-docs}
+    depends_on:
+      minio:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # 2) MinIO – S3-compatible object storage for the markdown files
+  minio:
+    image: minio/minio:latest
+    container_name: doc-viewer-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web console
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # 3) DB – PostgreSQL (users + future document tags)
+  db:
+    image: postgres:16-alpine
+    container_name: doc-viewer-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-docs}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-docs}
+      POSTGRES_DB: ${POSTGRES_DB:-docs}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-docs} -d ${POSTGRES_DB:-docs}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  minio_data:
+  pg_data:

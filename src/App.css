@@ -258,3 +258,118 @@ body {
     max-width: 100%;
   }
 }
+
+/* ---------- Upload / Delete ---------- */
+.sidebar-actions {
+  padding: 0 20px 12px;
+}
+
+.upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+  padding: 8px 12px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    opacity 0.2s;
+}
+
+.upload-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.upload-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sidebar-status {
+  margin: 0 20px 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.sidebar-status.ok {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.sidebar-status.err {
+  background: rgba(220, 80, 80, 0.12);
+  color: #c0392b;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: stretch;
+}
+
+.sidebar-item .sidebar-link {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sidebar-link-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-badge {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--code-bg);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.delete-btn {
+  flex-shrink: 0;
+  margin: 6px 8px 6px 0;
+  padding: 0 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    background 0.2s;
+}
+
+.delete-btn:hover:not(:disabled) {
+  color: #c0392b;
+  border-color: #c0392b;
+  background: rgba(220, 80, 80, 0.08);
+}
+
+.delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.muted {
+  color: var(--text-muted);
+  font-size: 14px;
+}
