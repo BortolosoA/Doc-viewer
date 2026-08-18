@@ -8,7 +8,9 @@ import {
   loginUser,
   verifyEmailToken,
   resendVerificationEmail,
+  generateVerificationLink,
   sendVerificationEmail,
+  changePassword,
 } from "./auth.js";
 import { pool, initSchema, seedAdmin } from "./db.js";
 import {
@@ -121,7 +123,50 @@ app.post("/auth/resend", async (req, res) => {
   }
   const verifyUrl = `${process.env.APP_URL || "http://localhost:5173"}/verify-email?token=${encodeURIComponent(result.token)}`;
   await sendVerificationEmail(email, result.token);
-  res.json({ ok: true, verifyUrl });
+  res.json({ ok: true, verifyUrl, sendEmail: true });
+});
+
+app.post("/auth/change-password", authMiddleware, async (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: "Senha atual e nova senha são obrigatórias" });
+  }
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: "A nova senha deve ter ao menos 6 caracteres" });
+  }
+  const user = await loginUser(req.user.email, currentPassword);
+  if (!user) {
+    return res.status(401).json({ error: "Senha atual está incorreta" });
+  }
+  const updated = await changePassword(req.user.userId, newPassword);
+  if (updated) {
+    res.json({ ok: true, message: "Senha alterada com sucesso" });
+  } else {
+    res.status(500).json({ error: "Erro ao alterar senha" });
+  }
+});
+
+app.post("/admin/resend-verification", authMiddleware, adminOnly, async (req, res) => {
+  const { email, sendEmail } = req.body || {};
+  if (!email) return res.status(400).json({ error: "email é obrigatório" });
+  
+  if (sendEmail) {
+    const result = await resendVerificationEmail(email);
+    if (!result) {
+      return res.json({ ok: false, error: "Não foi possível enviar e-mail de verificação" });
+    }
+    await sendVerificationEmail(email, result.token);
+    res.json({ ok: true, verifyUrl: result.verifyUrl, sent: true });
+  } else {
+    const result = await generateVerificationLink(email);
+    if (!result) {
+      if (result?.verified) {
+        return res.json({ ok: true, verified: true, message: "Email já verificado" });
+      }
+      return res.json({ ok: false, error: "Usuário não encontrado ou já verificado" });
+    }
+    res.json({ ok: true, verifyUrl: result.verifyUrl, sent: false });
+  }
 });
 
 app.get("/auth/me", authMiddleware, (req, res) => {

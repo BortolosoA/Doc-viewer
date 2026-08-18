@@ -1484,3 +1484,76 @@ body {
   border-color: #c0392b;
   background: rgba(220, 80, 80, 0.08);
 }
+
+.admin-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.admin-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-verify-btn:hover {
+  color: #2980b9;
+  border-color: #2980b9;
+  background: rgba(52, 152, 219, 0.08);
+}
+
+.admin-password-btn:hover {
+  color: #8e44ad;
+  border-color: #8e44ad;
+  background: rgba(155, 89, 182, 0.08);
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 12px;
+  color: var(--text-color);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.modal-close {
+  margin-top: 8px;
+  width: 100%;
+}
+
+.link-box {
+  background: var(--bg-color);
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 6px;
+  padding: 10px;
+  margin: 8px 0;
+  word-break: break-all;
+}
+
+.link-box code {
+  font-size: 12px;
+  color: var(--text-color);
+}
+
+.modal-info {
+  color: var(--text-muted);
+  font-size: 14px;
+}
