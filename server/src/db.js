@@ -4,8 +4,7 @@ const { Pool } = pg;
 
 export const pool = new Pool({
   connectionString:
-    process.env.DATABASE_URL ||
-    "postgres://docs:docs@db:5432/docs",
+    process.env.DATABASE_URL || "postgres://docs:docs@db:5432/docs",
 });
 
 export async function initSchema() {
@@ -23,9 +22,21 @@ export async function initSchema() {
   `);
 
   // Idempotent column additions for already-created tables
-  try { await pool.query(`ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NOT NULL DEFAULT ''`); } catch {}
-  try { await pool.query(`ALTER TABLE users ADD COLUMN email_verified BOOLEAN NOT NULL DEFAULT FALSE`); } catch {}
-  try { await pool.query(`ALTER TABLE users ADD COLUMN role VARCHAR(16) NOT NULL DEFAULT 'user'`); } catch {}
+  try {
+    await pool.query(
+      `ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NOT NULL DEFAULT ''`,
+    );
+  } catch {}
+  try {
+    await pool.query(
+      `ALTER TABLE users ADD COLUMN email_verified BOOLEAN NOT NULL DEFAULT FALSE`,
+    );
+  } catch {}
+  try {
+    await pool.query(
+      `ALTER TABLE users ADD COLUMN role VARCHAR(16) NOT NULL DEFAULT 'user'`,
+    );
+  } catch {}
 
   // Email verification tokens
   await pool.query(`
@@ -72,9 +83,9 @@ export async function initSchema() {
 }
 
 export async function seedAdmin() {
-  const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@admin.com";
-  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin!123";
-  const ADMIN_USERNAME = "admin";
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+  const ADMIN_USERNAME = "Admin";
 
   const { hashPassword } = await import("./auth.js");
   const passwordHash = await hashPassword(ADMIN_PASSWORD);
@@ -82,11 +93,12 @@ export async function seedAdmin() {
   const result = await pool.query(
     `INSERT INTO users (username, email, password_hash, email_verified, role)
      VALUES ($1, $2, $3, TRUE, 'admin')
-     ON CONFLICT (email) DO UPDATE
+     ON CONFLICT (username) DO UPDATE
        SET email_verified = TRUE,
            role = 'admin',
+           email = EXCLUDED.email,
            password_hash = EXCLUDED.password_hash
-     RETURNING id, email, email_verified, role`,
+     RETURNING id, username, email, email_verified, role`,
     [ADMIN_USERNAME, ADMIN_EMAIL, passwordHash],
   );
   console.log(`[seedAdmin] admin user:`, JSON.stringify(result.rows[0]));
