@@ -111,6 +111,20 @@ export const api = {
     });
   },
 
+  async adminResendVerification(email, sendEmail) {
+    return request("/admin/resend-verification", {
+      method: "POST",
+      body: JSON.stringify({ email, sendEmail }),
+    });
+  },
+
+  async changePassword(currentPassword, newPassword) {
+    return request("/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  },
+
   async getMe() {
     return request("/auth/me");
   },

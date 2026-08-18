@@ -15,6 +15,15 @@ export async function hashPassword(password) {
   return crypto.createHash("sha256").update(password).digest("hex");
 }
 
+export async function changePassword(userId, newPassword) {
+  const passwordHash = await hashPassword(newPassword);
+  const { rows } = await pool.query(
+    "UPDATE users SET password_hash = $1 WHERE id = $2 RETURNING id, username, email",
+    [passwordHash, userId],
+  );
+  return rows[0] || null;
+}
+
 export async function createUser(username, email, password) {
   const passwordHash = await hashPassword(password);
   const token = generateToken();
@@ -94,6 +103,7 @@ export async function resendVerificationEmail(email) {
   const userId = rows[0].id;
   const token = generateToken();
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const verifyUrl = `${APP_URL}/verify-email?token=${encodeURIComponent(token)}`;
   console.log(`[resend] resendVerificationEmail: generated token for userId=${userId}`);
   await pool.query("DELETE FROM email_verifications WHERE user_id = $1", [userId]);
   const insertResult = await pool.query(
@@ -101,7 +111,32 @@ export async function resendVerificationEmail(email) {
     [userId, token, expiresAt],
   );
   console.log(`[resend] resendVerificationEmail: token stored successfully`);
-  return { userId, token };
+  return { userId, token, verifyUrl };
+}
+
+export async function generateVerificationLink(email) {
+  console.log(`[resend] generateVerificationLink: email=${email}`);
+  const { rows } = await pool.query(
+    "SELECT id, email_verified FROM users WHERE email = $1",
+    [email],
+  );
+  console.log(`[resend] generateVerificationLink: found ${rows.length} user(s)`);
+  if (rows.length === 0) {
+    return null;
+  }
+  if (rows[0].email_verified) {
+    return { verified: true };
+  }
+  const userId = rows[0].id;
+  const token = generateToken();
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const verifyUrl = `${APP_URL}/verify-email?token=${encodeURIComponent(token)}`;
+  await pool.query("DELETE FROM email_verifications WHERE user_id = $1", [userId]);
+  await pool.query(
+    `INSERT INTO email_verifications (user_id, token, expires_at) VALUES ($1, $2, $3)`,
+    [userId, token, expiresAt],
+  );
+  return { userId, token, verifyUrl, verified: false };
 }
 
 export async function sendVerificationEmail(email, token) {
