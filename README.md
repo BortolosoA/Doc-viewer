@@ -4,12 +4,12 @@ Aplicativo de documentação single-page construído com React + Vite, com backe
 
 ## Arquitetura (3 serviços via Docker Compose)
 
-| Serviço | Porta | Descrição |
-|---------|-------|-----------|
-| **app** (Nginx + React) | 8080 | Frontend servido estaticamente; proxy `/api/*` → `api:3001` |
-| **api** (Node/Express) | 3001 | Upload/download/delete de documentos, usuários, tags |
-| **minio** | 9000 / 9001 | Object storage S3-compatível (arquivos .md) |
-| **db** (PostgreSQL) | 5432 | Metadados de documentos, cadastro de usuários, tags (futuro) |
+| Serviço                 | Porta       | Descrição                                                    |
+| ----------------------- | ----------- | ------------------------------------------------------------ |
+| **app** (Nginx + React) | 8080        | Frontend servido estaticamente; proxy `/api/*` → `api:3001`  |
+| **api** (Node/Express)  | 3001        | Upload/download/delete de documentos, usuários, tags         |
+| **minio**               | 9000 / 9001 | Object storage S3-compatível (arquivos .md)                  |
+| **db** (PostgreSQL)     | 5432        | Metadados de documentos, cadastro de usuários, tags (futuro) |
 
 ## Funcionalidades
 
@@ -72,7 +72,7 @@ cd server && npm install && npm run dev
 
 # Terminal 3: roda o frontend (Vite)
 npm install && npm run dev
-# Acesse http://localhost:5173 (VITE_API_URL aponta para http://localhost:3001)
+# Acesse http://localhost:8080 (APP_URL aponta para http://localhost:8080)
 ```
 
 ## Adicionar páginas estáticas (fallback)
@@ -97,15 +97,15 @@ npm install && npm run dev
 
 ## API Endpoints
 
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/health` | Health check |
-| GET | `/users` | Lista usuários |
-| POST | `/users` | Cria usuário `{username, email?}` |
-| GET | `/documents` | Lista metadados dos documentos |
-| GET | `/documents/:name/raw` | Conteúdo bruto (markdown) |
-| POST | `/documents` | Upload (multipart/form-data, campo `file`) |
-| DELETE | `/documents/:name` | Exclui documento |
+| Método | Rota                   | Descrição                                  |
+| ------ | ---------------------- | ------------------------------------------ |
+| GET    | `/health`              | Health check                               |
+| GET    | `/users`               | Lista usuários                             |
+| POST   | `/users`               | Cria usuário `{username, email?}`          |
+| GET    | `/documents`           | Lista metadados dos documentos             |
+| GET    | `/documents/:name/raw` | Conteúdo bruto (markdown)                  |
+| POST   | `/documents`           | Upload (multipart/form-data, campo `file`) |
+| DELETE | `/documents/:name`     | Exclui documento                           |
 
 ## Variáveis de ambiente
 
@@ -114,7 +114,7 @@ Veja `.env.example`. Principais:
 - `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` — credenciais MinIO
 - `MINIO_BUCKET` — bucket padrão (`docs`)
 - `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` — Postgres
-- `VITE_API_URL` — injetado no build do frontend (ex.: `http://localhost:3001`)
+- `APP_URL` — injetado no build do frontend (ex.: `http://localhost:8080`)
 
 ## Próximos passos (roadmap)
 

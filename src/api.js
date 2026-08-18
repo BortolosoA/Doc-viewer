@@ -1,8 +1,8 @@
 // Helper to call backend API.
 // Production  : relies on /api prefix — nginx proxies to the backend.
-// Development : VITE_API_URL can override (used by Vite dev server proxy).
+// Development : APP_URL can override (used by Vite dev server proxy).
 const API_BASE =
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) || "/api";
+  (typeof import.meta !== "undefined" && import.meta.env?.APP_URL) || "/api";
 
 let _authToken = localStorage.getItem("docs_session_token") || "";
 
