@@ -330,17 +330,28 @@ function App() {
 
 function EmailVerifyCallback({ token, onVerified }) {
   const [status, setStatus] = useState("checking");
+  const [showAlert, setShowAlert] = useState(false);
 
   useEffect(() => {
     api.verifyEmail(token)
-      .then(({ user: u }) => { setStatus("success"); onVerified(u); })
+      .then(({ user: u }) => { 
+        setStatus("success"); 
+        onVerified(u);
+        setShowAlert(true);
+      })
       .catch(() => setStatus("error"));
   }, [token, onVerified]);
 
+  useEffect(() => {
+    if (showAlert) {
+      alert("E-mail confirmado com sucesso! A redirecionar para a página principal.");
+      setTimeout(() => {
+        window.location.href = window.location.origin;
+      }, 500);
+    }
+  }, [showAlert]);
+
   if (status === "success") {
-    setTimeout(() => {
-      window.location.href = window.location.origin;
-    }, 1500);
     return <p className="auth-verify-text">E-mail confirmado! A redirecionar…</p>;
   }
   return <p className="auth-verify-text auth-error">Token inválido ou expirado.</p>;
