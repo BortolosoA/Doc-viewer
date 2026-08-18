@@ -161,7 +161,7 @@ function App() {
             <span className="brand-title">Docs</span>
           </div>
         </header>
-        <EmailVerifyCallback token={verifyToken} onVerified={(u) => { setUser(u); setAuthToken(verifyToken); }} />
+        <EmailVerifyCallback token={verifyToken} onVerified={(u) => { setUser(u); setAuthToken(u?.sessionId || null); }} />
       </div>
     );
   }
@@ -215,7 +215,7 @@ function App() {
           <span className="brand-title">Docs</span>
         </div>
         <div className="topbar-actions">
-          {user?.role !== "admin" && currentView !== "admin" && (
+          {user?.role === "admin" && currentView !== "admin" && (
             <button
               type="button"
               className="admin-pill"
@@ -337,7 +337,12 @@ function EmailVerifyCallback({ token, onVerified }) {
       .catch(() => setStatus("error"));
   }, [token, onVerified]);
 
-  if (status === "success") return <p className="auth-verify-text">E-mail confirmado! A carregar…</p>;
+  if (status === "success") {
+    setTimeout(() => {
+      window.location.href = window.location.origin;
+    }, 1500);
+    return <p className="auth-verify-text">E-mail confirmado! A redirecionar…</p>;
+  }
   return <p className="auth-verify-text auth-error">Token inválido ou expirado.</p>;
 }
 

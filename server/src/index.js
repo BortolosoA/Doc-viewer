@@ -116,8 +116,11 @@ app.post("/auth/resend", async (req, res) => {
   const { email } = req.body || {};
   if (!email) return res.status(400).json({ error: "email é obrigatório" });
   const result = await resendVerificationEmail(email);
-  const verifyUrl = `${process.env.APP_URL || "http://localhost:5173"}/verify-email?token=${result?.token || ""}`;
-  if (result) await sendVerificationEmail(email, result.token);
+  if (!result) {
+    return res.json({ ok: false, error: "Não foi possível enviar e-mail de verificação" });
+  }
+  const verifyUrl = `${process.env.APP_URL || "http://localhost:5173"}/verify-email?token=${encodeURIComponent(result.token)}`;
+  await sendVerificationEmail(email, result.token);
   res.json({ ok: true, verifyUrl });
 });
 

@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
     container_name: doc-viewer-app
     ports:
-      - "8800:80"
+      - "8080:80"
     depends_on:
       - api
     restart: unless-stopped
@@ -27,6 +27,9 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
       MINIO_BUCKET: ${MINIO_BUCKET:-docs}
       DATABASE_URL: postgres://${POSTGRES_USER:-docs}:${POSTGRES_PASSWORD:-docs}@db:5432/${POSTGRES_DB:-docs}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM: ${RESEND_FROM:-onboarding@resend.dev}
+      APP_URL: ${APP_URL:-http://localhost:8080}
     depends_on:
       minio:
         condition: service_healthy
