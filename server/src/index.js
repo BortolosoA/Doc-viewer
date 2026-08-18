@@ -342,10 +342,38 @@ app.put("/documents/:name/tags", authMiddleware, async (req, res) => {
   res.status(204).end();
 });
 
+// ---------- Env validation ----------
+function validateEnv() {
+  const errors = [];
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+  const JWT_SECRET = process.env.JWT_SECRET;
+  const DATABASE_URL = process.env.DATABASE_URL;
+
+  if (!ADMIN_EMAIL || !ADMIN_EMAIL.includes("@")) {
+    errors.push("ADMIN_EMAIL must be a valid e-mail (or unset to use default)");
+  }
+  if (!ADMIN_PASSWORD || ADMIN_PASSWORD.length < 6) {
+    errors.push("ADMIN_PASSWORD must be at least 6 characters (or unset to use default)");
+  }
+  if (!JWT_SECRET || JWT_SECRET.length < 16) {
+    errors.push("JWT_SECRET must be at least 16 characters (or unset to use a dev default)");
+  }
+  if (!DATABASE_URL) {
+    errors.push("DATABASE_URL is not set (or unset to use default)");
+  }
+  if (errors.length) {
+    console.warn("[env] configuration warnings:\n" + errors.map((e) => "  - " + e).join("\n"));
+  } else {
+    console.log("[env] configuration OK");
+  }
+}
+
 // ---------- Bootstrap ----------
 const PORT = Number(process.env.PORT || 3001);
 
 async function start() {
+  validateEnv();
   for (let i = 0; i < 30; i++) {
     try {
       await pool.query("SELECT 1");
